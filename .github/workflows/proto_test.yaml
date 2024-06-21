@@ -73,4 +73,7 @@ jobs:
           done
           popd
       - name: Unit Tests
-        run: mvn test -B -ntp -Dclirr.skip=true -Denforcer.skip=true
+        run: |
+          pushd bigtable
+          mvn test -B -ntp -Dclirr.skip=true -Denforcer.skip=true
+          popd
