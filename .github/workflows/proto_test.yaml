@@ -21,6 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          path: bigtable
+      - uses: actions/checkout@v4
+        with:
+          repository: googleapis/sdk-platform-java
+          path: sdk-platform-java
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -32,7 +38,6 @@ jobs:
           sudo apt-get -y install libxml2-utils
       - name: Install Shared Dependencies
         run: |
-          git clone https://github.com/googleapis/sdk-platform-java
           pushd sdk-platform-java
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
           echo "Install complete. java-shared-dependencies = $SHARED_DEPS_VERSION"
@@ -45,6 +50,7 @@ jobs:
         id: shared-deps
       - name: Update BigTable's Shared Dependencies
         run: |
+          pushd bigtable
           echo "Shared Deps Version: ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}"
           poms=($(find . -name pom.xml))
           for pom in "${poms[@]}"; do
@@ -65,5 +71,6 @@ jobs:
           EOF
             popd
           done
+          popd
       - name: Unit Tests
         run: mvn test -B -ntp -Dclirr.skip=true -Denforcer.skip=true
