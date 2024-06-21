@@ -32,8 +32,6 @@ jobs:
           sudo apt-get -y install libxml2-utils
       - name: Install Shared Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get -y install libxml2-utils
           git clone https://github.com/googleapis/sdk-platform-java
           cd sdk-platform-java
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
@@ -46,8 +44,7 @@ jobs:
         id: shared-deps
       - name: Update BigTable's Shared Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get -y install libxml2-utils
+          echo "Shared Deps Version: ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}"
           poms=($(find . -name pom.xml))
           for pom in "${poms[@]}"; do
             if xmllint --xpath "//*[local-name()='artifactId' and text()='sdk-platform-java-config']/following-sibling::*[local-name()='version']" "$pom" &>/dev/null; then
@@ -57,11 +54,11 @@ jobs:
           POMS=(${found[@]})
           for pom in $POMS; do
             xmllint --shell pom.xml &>/dev/null << EOF
-              setns x=http://maven.apache.org/POM/4.0.0
-              cd .//x:artifactId[text()="sdk-platform-java-config"]
-              cd ../x:version
-              set ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}
-              save pom.xml
+            setns x=http://maven.apache.org/POM/4.0.0
+            cd .//x:artifactId[text()="sdk-platform-java-config"]
+            cd ../x:version
+            set ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}
+            save pom.xml
             EOF
           done
           mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
