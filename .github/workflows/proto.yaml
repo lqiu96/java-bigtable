@@ -11,8 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# Github action job to test core java library features on
-# downstream client libraries before they are released.
 on:
   workflow_dispatch:
 name: proto
@@ -30,8 +28,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install libxml2-utils
-      - name: Install New Shared Dependencies
-        id: deps
+      - id: deps
         run: |
           git clone https://github.com/googleapis/sdk-platform-java
           cd sdk-platform-java
@@ -52,7 +49,7 @@ jobs:
           done
           POMS=(${found[@]})
           for pom in $POMS; do
-            xmllint --shell pom.xml &>/dev/null <<EOF
+            xmllint --shell pom.xml &>/dev/null << EOF
               setns x=http://maven.apache.org/POM/4.0.0
               cd .//x:artifactId[text()="sdk-platform-java-config"]
               cd ../x:version
