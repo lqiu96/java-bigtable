@@ -23,13 +23,10 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: java -version
-      - name: Install xmllint
+      - name: Install Shared Dependencies
         run: |
           sudo apt-get update
           sudo apt-get -y install libxml2-utils
-      - name: Install Shared Dependencies
-        run: |
           git clone https://github.com/googleapis/sdk-platform-java
           cd sdk-platform-java
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
@@ -42,6 +39,8 @@ jobs:
         id: shared-deps
       - name: Update BigTable's Shared Dependencies
         run: |
+          sudo apt-get update
+          sudo apt-get -y install libxml2-utils
           poms=($(find . -name pom.xml))
           for pom in "${poms[@]}"; do
             if xmllint --xpath "//*[local-name()='artifactId' and text()='sdk-platform-java-config']/following-sibling::*[local-name()='version']" "$pom" &>/dev/null; then
