@@ -26,10 +26,16 @@ jobs:
           distribution: temurin
           java-version: 17
       - run: java -version
+      - name: Install xmllint
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libxml2-utils
       - name: Install Shared Dependencies
         run: |
           git clone https://github.com/googleapis/sdk-platform-java
+          cd sdk-platform-java
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
+          echo "Install complete. java-shared-dependencies = $SHARED_DEPS_VERSION"
           new_protobuf_version=4.27.1
           sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
           mvn install -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
