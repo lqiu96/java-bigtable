@@ -54,13 +54,13 @@ jobs:
           POMS=(${found[@]})
           for pom in $POMS; do
             pushd "$(dirname "$pom")"
-            xmllint --shell pom.xml &>/dev/null << EOF
-              setns x=http://maven.apache.org/POM/4.0.0
-              cd .//x:artifactId[text()="sdk-platform-java-config"]
-              cd ../x:version
-              set ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}
-              save pom.xml
-            EOF
+            xmllint --shell pom.xml &>/dev/null <<EOF
+          setns x=http://maven.apache.org/POM/4.0.0
+          cd .//x:artifactId[text()="sdk-platform-java-config"]
+          cd ../x:version
+          set ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}
+          save pom.xml
+          EOF
             popd
           done
           mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
