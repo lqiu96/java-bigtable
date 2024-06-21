@@ -40,7 +40,7 @@ jobs:
           new_protobuf_version=3.25.3
           #          new_protobuf_version=4.27.1
           sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
-          mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
+          mvn install -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
           popd
         id: shared-deps
       - name: Update BigTable's Shared Dependencies
@@ -65,4 +65,5 @@ jobs:
           EOF
             popd
           done
-          mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
+      - name: Unit Tests
+        run: mvn test -B -ntp -Dclirr.skip=true -Denforcer.skip=true
