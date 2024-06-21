@@ -24,7 +24,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - name: Install xmllint
-        run: sudo apt-get update && sudo apt-get -y install libxml2-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libxml2-utils
       - name: Install Shared Dependencies
         run: |
           git clone https://github.com/googleapis/sdk-platform-java
