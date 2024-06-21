@@ -30,12 +30,34 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install libxml2-utils
-      - name: Install Shared Dependencies
+      - name: Install New Shared Dependencies
+        id: deps
         run: |
           git clone https://github.com/googleapis/sdk-platform-java
           cd sdk-platform-java
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
           echo "Install complete. java-shared-dependencies = $SHARED_DEPS_VERSION"
-          new_protobuf_version=4.27.1
+          echo "SHARED_DEPS_VERSION=$(echo $SHARED_DEPS_VERSION)" >> $GITHUB_OUTPUT
+          new_protobuf_version=3.25.3
+#          new_protobuf_version=4.27.1
           sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
-          mvn install -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
+          mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
+      - name: Update BigTable's Shared Dependencies
+        run: |
+          poms=($(find . -name pom.xml))
+          for pom in "${poms[@]}"; do
+            if xmllint --xpath "//*[local-name()='artifactId' and text()='sdk-platform-java-config']/following-sibling::*[local-name()='version']" "$pom" &>/dev/null; then
+              found+=("$pom")
+            fi
+          done
+          POMS=(${found[@]})
+          for pom in $POMS; do
+            xmllint --shell pom.xml &>/dev/null <<EOF
+              setns x=http://maven.apache.org/POM/4.0.0
+              cd .//x:artifactId[text()="sdk-platform-java-config"]
+              cd ../x:version
+              set ${{ steps.deps.outputs.SHARED_DEPS_VERSION }}
+              save pom.xml
+            EOF
+          done
+          mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
