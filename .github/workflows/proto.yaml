@@ -33,7 +33,7 @@ jobs:
           cd sdk-platform-java
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
           echo "Install complete. java-shared-dependencies = $SHARED_DEPS_VERSION"
-          echo "SHARED_DEPS_VERSION=$(echo $SHARED_DEPS_VERSION)" >> $GITHUB_OUTPUT
+          echo "::set-output SHARED_DEPS_VERSION=$(echo $SHARED_DEPS_VERSION)"
           new_protobuf_version=3.25.3
 #          new_protobuf_version=4.27.1
           sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
