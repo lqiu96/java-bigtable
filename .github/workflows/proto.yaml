@@ -23,12 +23,11 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - run: java -version
       - name: Install xmllint
         run: |
           sudo apt-get update
           sudo apt-get -y install libxml2-utils
-      - id: deps
+      - name: Install Shared Dependencies
         run: |
           git clone https://github.com/googleapis/sdk-platform-java
           cd sdk-platform-java
@@ -39,6 +38,7 @@ jobs:
 #          new_protobuf_version=4.27.1
           sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
           mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
+        id: shared-deps
       - name: Update BigTable's Shared Dependencies
         run: |
           poms=($(find . -name pom.xml))
@@ -53,7 +53,7 @@ jobs:
               setns x=http://maven.apache.org/POM/4.0.0
               cd .//x:artifactId[text()="sdk-platform-java-config"]
               cd ../x:version
-              set ${{ steps.deps.outputs.SHARED_DEPS_VERSION }}
+              set ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}
               save pom.xml
             EOF
           done
