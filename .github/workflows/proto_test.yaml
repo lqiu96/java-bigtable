@@ -1,0 +1,67 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# Github action job to test core java library features on
+# downstream client libraries before they are released.
+on:
+  workflow_dispatch:
+name: proto
+jobs:
+  proto_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - run: java -version
+      - name: Install xmllint
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libxml2-utils
+      - name: Install Shared Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libxml2-utils
+          git clone https://github.com/googleapis/sdk-platform-java
+          cd sdk-platform-java
+          SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
+          echo "Install complete. java-shared-dependencies = $SHARED_DEPS_VERSION"
+          echo "::set-output SHARED_DEPS_VERSION=$(echo $SHARED_DEPS_VERSION)"
+          new_protobuf_version=3.25.3
+          #          new_protobuf_version=4.27.1
+          sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
+          mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
+        id: shared-deps
+      - name: Update BigTable's Shared Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install libxml2-utils
+          poms=($(find . -name pom.xml))
+          for pom in "${poms[@]}"; do
+            if xmllint --xpath "//*[local-name()='artifactId' and text()='sdk-platform-java-config']/following-sibling::*[local-name()='version']" "$pom" &>/dev/null; then
+              found+=("$pom")
+            fi
+          done
+          POMS=(${found[@]})
+          for pom in $POMS; do
+            xmllint --shell pom.xml &>/dev/null << EOF
+              setns x=http://maven.apache.org/POM/4.0.0
+              cd .//x:artifactId[text()="sdk-platform-java-config"]
+              cd ../x:version
+              set ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}
+              save pom.xml
+            EOF
+          done
+          mvn install -q -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
