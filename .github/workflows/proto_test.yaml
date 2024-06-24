@@ -83,8 +83,19 @@ jobs:
           done
           
           popd
-      - name: Unit Tests
+      - name: Create PR
         run: |
+          set -x
+          [ -z "$(git config user.email)" ] && git config --global user.email "cloud-java-bot@google.com"
+          [ -z "$(git config user.name)" ] && git config --global user.name "cloud-java-bot"
+          
+          pr_num=$(gh pr list -s open -H testing-protobuf-runtime -q . --json number | jq ".[] | .number")
+          gh pr close "${pr_num}"
+          
+          git branch -D testing-protobuf-runtime
+          git checkout -b testing-protobuf-runtime
+          
           pushd repo
-          mvn test -B -ntp -Dclirr.skip=true -Denforcer.skip=true
+          git commit -am "chore: Testing with Protobuf Runtime: {{ github.event.inputs.proto_runtime_version }}"
+          git push
           popd
