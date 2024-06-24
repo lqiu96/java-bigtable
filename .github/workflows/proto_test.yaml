@@ -15,6 +15,10 @@
 # downstream client libraries before they are released.
 on:
   workflow_dispatch:
+    inputs:
+      proto_runtime_version:
+        required: true
+        description: Protobuf Runtime Version to test (i.e. 3.25.3 or 4.27.1)
 name: proto
 jobs:
   proto_test:
@@ -22,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: bigtable
+          path: repo
       - uses: actions/checkout@v4
         with:
           repository: googleapis/sdk-platform-java
@@ -39,19 +43,23 @@ jobs:
       - name: Install Shared Dependencies
         run: |
           pushd sdk-platform-java
+          # Find the shared-deps version
           SHARED_DEPS_VERSION=$(sed -e 's/xmlns=".*"//' "java-shared-dependencies/pom.xml" | xmllint --xpath '/project/version/text()' -)
           echo "Install complete. java-shared-dependencies = $SHARED_DEPS_VERSION"
           echo "SHARED_DEPS_VERSION=$(echo $SHARED_DEPS_VERSION)" >> $GITHUB_OUTPUT
-          new_protobuf_version=3.25.3
-          #          new_protobuf_version=4.27.1
-          sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1$new_protobuf_version\2/" "gapic-generator-java-pom-parent/pom.xml"
+          
+          # Modify to the new Protobuf Version
+          sed -i -E "s/(<protobuf.version>).*(<\/protobuf.version>)/\1${{ github.event.inputs.proto_runtime_version }}\2/" "gapic-generator-java-pom-parent/pom.xml"
+          
+          # Install to local ~/.m2
           mvn install -B -ntp -DskipTests -Dclirr.skip -Dcheckstyle.skip -T 1C
           popd
         id: shared-deps
-      - name: Update BigTable's Shared Dependencies
+      - name: Use Updated Shared Dependencies
         run: |
-          pushd bigtable
-          echo "Shared Deps Version: ${{ steps.shared-deps.outputs.SHARED_DEPS_VERSION }}"
+          pushd repo
+          
+          # Find all the poms with the shared-deps reference
           poms=($(find . -name pom.xml))
           for pom in "${poms[@]}"; do
             if xmllint --xpath "//*[local-name()='artifactId' and text()='sdk-platform-java-config']/following-sibling::*[local-name()='version']" "$pom" &>/dev/null; then
@@ -60,6 +68,8 @@ jobs:
             fi
           done
           POMS=(${found[@]})
+          
+          # Update all the poms to use the new shared-deps version
           for pom in $POMS; do
             pushd "$(dirname "$pom")"
             xmllint --shell pom.xml &>/dev/null <<EOF
@@ -71,9 +81,10 @@ jobs:
           EOF
             popd
           done
+          
           popd
       - name: Unit Tests
         run: |
-          pushd bigtable
+          pushd repo
           mvn test -B -ntp -Dclirr.skip=true -Denforcer.skip=true
           popd
