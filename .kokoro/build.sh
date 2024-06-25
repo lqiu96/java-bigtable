@@ -28,7 +28,14 @@ mvn -version
 echo ${JOB_TYPE}
 
 current_java_home=$JAVA_HOME
-sudo update-java-alternatives -s temurin-17-jdk-amd64
+pushd /tmp
+wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
+tar -xvzf jdk-17_linux-x64_bin.tar.gz
+export JAVA_HOME=/tmp/jdk-17_linux-x64_bin/bin
+export PATH=$PATH:$JAVA_HOME
+popd
+
+java -version
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
@@ -78,6 +85,7 @@ for pom in "${poms[@]}"; do
 done
 
 export JAVA_HOME=$current_java_home
+export PATH=$PATH:$JAVA_HOME
 java -version
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
