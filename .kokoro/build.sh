@@ -30,9 +30,7 @@ echo ${JOB_TYPE}
 current_java_home=$JAVA_HOME
 echo "Current JAVA_HOME: ${current_java_home}"
 
-update-alternatives --list java
-sudo update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
-
+sudo update-java-alternatives -l
 java -version
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
@@ -82,9 +80,6 @@ for pom in "${poms[@]}"; do
   fi
 done
 
-export PATH="$PATH:$current_java_home/bin"
-java -version
-
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
   mvn install -B -V -ntp \
@@ -118,6 +113,7 @@ javadoc)
     RETURN_CODE=$?
     ;;
 integration)
+    FAILSAFE_JVM_OPT="-Djvm=${current_java_home}/bin/java"
     mvn -B ${INTEGRATION_TEST_ARGS} \
       -ntp \
       -Penable-integration-tests \
@@ -125,6 +121,7 @@ integration)
       -Dclirr.skip=true \
       -Denforcer.skip=true \
       -fae \
+      "${FAILSAFE_JVM_OPT}" \
       verify
     RETURN_CODE=$?
     ;;
