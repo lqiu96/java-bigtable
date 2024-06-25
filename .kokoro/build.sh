@@ -27,6 +27,8 @@ source ${scriptDir}/common.sh
 mvn -version
 echo ${JOB_TYPE}
 
+update-java-alternatives -l
+
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
   /<version>/{
