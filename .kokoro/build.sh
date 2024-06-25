@@ -31,7 +31,9 @@ current_java_home=$JAVA_HOME
 echo "Current JAVA_HOME: ${current_java_home}"
 
 update-alternatives --list java
-update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
+sudo update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
+
+java -version
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
@@ -79,6 +81,9 @@ for pom in "${poms[@]}"; do
     }" "${pom}"
   fi
 done
+
+export PATH="$PATH:$current_java_home/bin"
+java -version
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
