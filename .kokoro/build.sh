@@ -27,16 +27,7 @@ source ${scriptDir}/common.sh
 mvn -version
 echo ${JOB_TYPE}
 
-current_java_home=$JAVA_HOME
-pushd /tmp
-mkdir java-17
-wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
-tar -zxvf jdk-17_linux-x64_bin.tar.gz -C java-17
-export JAVA_HOME=/tmp/java-17
-export PATH=$PATH:$JAVA_HOME/bin
-popd
-
-java -version
+update-alternatives --list java
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
@@ -84,10 +75,6 @@ for pom in "${poms[@]}"; do
     }" "${pom}"
   fi
 done
-
-export JAVA_HOME=$current_java_home
-export PATH=$PATH:$JAVA_HOME
-java -version
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
