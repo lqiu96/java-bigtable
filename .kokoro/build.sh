@@ -30,7 +30,7 @@ echo ${JOB_TYPE}
 current_java_home=$JAVA_HOME
 pushd /tmp
 wget https://download.oracle.com/java/17/latest/jdk-17_linux-x64_bin.tar.gz
-tar -xvzf jdk-17_linux-x64_bin.tar.gz
+tar zxvf jdk-17_linux-x64_bin.tar.gz
 export JAVA_HOME=/tmp/jdk-17_linux-x64_bin
 export PATH=$PATH:$JAVA_HOME/bin
 popd
