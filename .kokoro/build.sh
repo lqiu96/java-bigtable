@@ -27,7 +27,11 @@ source ${scriptDir}/common.sh
 mvn -version
 echo ${JOB_TYPE}
 
+current_java_home=$JAVA_HOME
+echo "Current JAVA_HOME: ${current_java_home}"
+
 update-alternatives --list java
+update-alternatives --set java /usr/lib/jvm/temurin-17-jdk-amd64/bin/java
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
