@@ -27,7 +27,8 @@ source ${scriptDir}/common.sh
 mvn -version
 echo ${JOB_TYPE}
 
-update-java-alternatives -l
+current_java_home=$JAVA_HOME
+update-java-alternatives -s temurin-8-jdk-amd64
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
@@ -75,6 +76,9 @@ for pom in "${poms[@]}"; do
     }" "${pom}"
   fi
 done
+
+export JAVA_HOME=$current_java_home
+java -version
 
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
