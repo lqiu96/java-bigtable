@@ -28,13 +28,11 @@ mvn -version
 echo ${JOB_TYPE}
 
 current_java_home=$JAVA_HOME
-echo "Current JAVA_HOME: ${current_java_home}"
 
-sudo update-java-alternatives -l
-sudo update-java-alternatives -s temurin-17-jdk-amd64
-
-export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
-export PATH=$PATH:$JAVA_HOME/bin
+if [ ! -z "${JAVA11_HOME}" ]; then
+  export JAVA_HOME="${JAVA11_HOME}"
+  export PATH=${JAVA_HOME}/bin:$PATH
+fi
 
 java -version
 
@@ -85,6 +83,9 @@ for pom in "${poms[@]}"; do
   fi
 done
 
+export JAVA_HOME="${current_java_home}"
+export PATH=${JAVA_HOME}/bin:$PATH
+
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
   mvn install -B -V -ntp \
@@ -118,7 +119,6 @@ javadoc)
     RETURN_CODE=$?
     ;;
 integration)
-    FAILSAFE_JVM_OPT="-Djvm=${current_java_home}/bin/java"
     mvn -B ${INTEGRATION_TEST_ARGS} \
       -ntp \
       -Penable-integration-tests \
@@ -126,7 +126,6 @@ integration)
       -Dclirr.skip=true \
       -Denforcer.skip=true \
       -fae \
-      "${FAILSAFE_JVM_OPT}" \
       verify
     RETURN_CODE=$?
     ;;
