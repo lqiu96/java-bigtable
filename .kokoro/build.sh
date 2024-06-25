@@ -27,6 +27,53 @@ source ${scriptDir}/common.sh
 mvn -version
 echo ${JOB_TYPE}
 
+CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
+sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
+  /<version>/{
+      s/<version>\(.*\)<\/version>/\1/p
+      q
+  }
+}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+echo "The current proto version is: ${CURRENT_PROTO_VERSION}"
+
+LATEST_PROTO_VERSION=$(curl -s https://repo1.maven.org/maven2/com/google/protobuf/protobuf-java/maven-metadata.xml | sed -n '/<release>/s/.*<release>\(.*\)<\/release>.*/\1/p')
+echo "The latest proto version is: ${LATEST_PROTO_VERSION}"
+LATEST_PROTO_VERSION="3.25.3"
+
+pushd /tmp
+git clone https://github.com/googleapis/sdk-platform-java.git
+pushd sdk-platform-java
+pushd gapic-generator-java-pom-parent
+sed -i "/<protobuf.version>.*<\/protobuf.version>/s/\(.*<protobuf.version>\).*\(<\/protobuf.version>\)/\1${LATEST_PROTO_VERSION}\2/" pom.xml
+popd
+pushd sdk-platform-java-config
+SHARED_DEPS_VERSION=$(mvn -ntp help:effective-pom |
+sed -n "/<artifactId>sdk-platform-java-config<\/artifactId>/,/<\/dependency>/ {
+  /<version>/{
+      s/<version>\(.*\)<\/version>/\1/p
+      q
+  }
+}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+echo "Shared-Deps Version: ${SHARED_DEPS_VERSION}"
+popd
+mvn clean install -q -ntp \
+    -DskipTests=true \
+    -Dclirr.skip=true \
+    -Denforcer.skip=true \
+    -T 1C
+popd
+popd
+
+poms=($(find . -name pom.xml))
+for pom in "${poms[@]}"; do
+  if grep -q "sdk-platform-java-config" "${pom}"; then
+    echo "Updating the pom: ${pom} to use shared-deps version: ${SHARED_DEPS_VERSION}"
+    sed -i -E "/<groupId>com.google.cloud<\/groupId>.*<artifactId>sdk-platform-java-config<\/artifactId>/ {
+      s/(<version>)[^<]+(<\/version>)/\1${SHARED_DEPS_VERSION}\2/
+    }" "${pom}"
+  fi
+done
+
 # attempt to install 3 times with exponential backoff (starting with 10 seconds)
 retry_with_backoff 3 10 \
   mvn install -B -V -ntp \
