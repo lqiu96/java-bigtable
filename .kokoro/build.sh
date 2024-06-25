@@ -31,6 +31,11 @@ current_java_home=$JAVA_HOME
 echo "Current JAVA_HOME: ${current_java_home}"
 
 sudo update-java-alternatives -l
+sudo update-java-alternatives -s temurin-17-jdk-amd64
+
+export JAVA_HOME=/usr/lib/jvm/temurin-17-jdk-amd64
+export PATH=$PATH:$JAVA_HOME/bin
+
 java -version
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
