@@ -28,7 +28,7 @@ mvn -version
 echo ${JOB_TYPE}
 
 current_java_home=$JAVA_HOME
-update-java-alternatives -s temurin-8-jdk-amd64
+sudo update-java-alternatives -s temurin-17-jdk-amd64
 
 CURRENT_PROTO_VERSION=$(mvn -ntp help:effective-pom |
 sed -n "/<artifactId>protobuf-java<\/artifactId>/,/<\/dependency>/ {
